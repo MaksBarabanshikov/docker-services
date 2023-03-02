@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: docker-test-frontend
+    command: npm run dev
+    ports: [ "5173:5173" ]
+    restart: unless-stopped
+    volumes:
+      - ./frontend/src:/app/src
+  api:
+    command: npm run dev
+    volumes:
+      - ./api/src:/app/src
+  auth:
+    command: npm run dev
+    volumes:
+      - ./auth/src:/app/src
+  nginx:
+    volumes:
+      - ./nginx/nginx.conf.dev:/etc/nginx/conf.d/nginx.conf

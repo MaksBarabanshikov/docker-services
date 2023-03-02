@@ -1,0 +1,93 @@
+version: '3.9'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: docker-test-frontend
+    command: npm run dev
+    restart: unless-stopped
+    volumes:
+      - ./frontend/src:/app/src
+    networks:
+      - realdocker-network
+
+  api:
+    container_name: docker-test-api
+    build: ./api
+    command: npm run start
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+#      - HOST=http://realdocker.com
+      - MONGO_URL=mongodb://api_db:27017/api
+      - AUTH_API_URL=http://auth:3001/api
+      - MAILER_API_URL=http://mailer:3002/api
+    depends_on:
+      - api_db
+    networks:
+      - realdocker-network
+
+  auth:
+    build: ./auth
+    container_name: docker-test-auth
+    command: npm run start
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+#      - HOST=http://realdocker-api.com
+      - MONGO_URL=mongodb://auth_db:27017/auth
+      - API_URL=http://api:3000/api
+    depends_on:
+      - auth_db
+    networks:
+      - realdocker-network
+
+  mailer:
+    build: ./mailer
+    container_name: docker-test-mailer
+    command: npm run start
+    restart: unless-stopped
+    environment:
+      - PORT=3002
+      - API_URL=http://api:3000/api
+    networks:
+      - realdocker-network
+
+  api_db:
+    container_name: docker-test-api-db
+    image: mongo:latest
+    volumes:
+      - mongodb_api:/data/db
+    networks:
+      - realdocker-network
+
+  auth_db:
+    image: mongo:latest
+    container_name: docker-test-auth-db
+    volumes:
+      - mongodb_auth:/data/db
+    networks:
+      - realdocker-network
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: docker-test-nginx
+    ports: ["80:80"]
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - frontend
+    networks:
+      - realdocker-network
+
+volumes:
+    mongodb_api:
+    mongodb_auth:
+
+networks:
+  realdocker-network:
+    driver: bridge
+
+
